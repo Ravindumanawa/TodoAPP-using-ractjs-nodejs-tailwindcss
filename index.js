@@ -1,233 +1,152 @@
-import express from "express";
-import mysql from "mysql";
-import cors from "cors";
-import moment from "moment"; 
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+import App from './App';
 
-const app = express();
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "todo_db",
-});
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
 
-app.use(express.json());
-app.use(cors());
+// function App() {
+//   const [tasks, setTasks] = useState([
+//     { name: 'Cleaning floor', progress: 'On Going', startTime: '7:30 AM', endTime: '8:30 AM' },
+//   ]);
+//   const [isDeletePopupOpen, setIsDeletePopupOpen] = useState(false);
+//   const [selectedTask, setSelectedTask] = useState(null);
+//   const [isCreateTaskPopupOpen, setIsCreateTaskPopupOpen] = useState(false);
+//   const [isUpdateTaskPopupOpen, setIsUpdateTaskPopupOpen] = useState(false);
+//   const [newTask, setNewTask] = useState({ name: '', progress: '', startTime: '', endTime: '' });
+//   const [currentDate, setCurrentDate] = useState(new Date());
 
-app.get("/", (req, res) => {
-  res.json("hello this is the backend");
-});
+//   useEffect(() => {
+//     const intervalId = setInterval(() => {
+//       setCurrentDate(new Date());
+//     }, 1000);
 
-app.post("/items", (req, res) => {
-  const q =
-    "INSERT INTO items (taskname, taskprogress, starttime, endtime) VALUES (?, ?, ?, ?)";
+//     return () => clearInterval(intervalId);
+//   }, []);
 
-  // Parse the start time and end time using moment
-  const startTime = moment(req.body.starttime, "hh:mm A").format("HH:mm:ss");
-  const endTime = moment(req.body.endtime, "hh:mm A").format("HH:mm:ss");
+//   const handleDeleteTask = (task) => {
+//     setSelectedTask(task);
+//     setIsDeletePopupOpen(true);
+//   };
 
-  const values = [
-    req.body.taskname,
-    req.body.taskprogress,
-    startTime,  // <-- Corrected variable name
-    endTime,    // <-- Corrected variable name
-  ];
+//   const handleDeleteTaskConfirmation = () => {
+//     setTasks(tasks.filter((t) => t !== selectedTask));
+//     setIsDeletePopupOpen(false);
+//   };
 
-  db.query(q, values, (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error adding item to the database" });
-    }
+//   const handleCancelDeleteTask = () => {
+//     setIsDeletePopupOpen(false);
+//   };
 
-    return res.status(201).json({ message: "Item added successfully" });
-  });
-});
+//   const handleCreateTaskChange = (event) => {
+//     setNewTask({ ...newTask, [event.target.name]: event.target.value });
+//   };
 
+//   const handleCreateTaskSubmit = (event) => {
+//     event.preventDefault();
 
-app.get("/items", (req, res) => {
-  const q = "SELECT * FROM items";
+//     if (newTask.name && newTask.progress && newTask.startTime && newTask.endTime) {
+//       setTasks([...tasks, newTask]);
+//       setIsCreateTaskPopupOpen(false);
+//       setNewTask({ name: '', progress: '', startTime: '', endTime: '' });
+//     } else {
+//       // Handle form validation or show an error message
+//     }
+//   };
 
-  db.query(q, (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error fetching items from the database" });
-    }
+//   const handleUpdateTask = (taskToUpdate) => {
+//     setNewTask(taskToUpdate);
+//     setIsUpdateTaskPopupOpen(true);
+//   };
 
-    // Format the time to AM/PM
-    const formattedData = data.map((item) => {
-      return {
-        ...item,
-        starttime: moment(item.starttime, "HH:mm:ss").format("hh:mm A"),
-        endtime: moment(item.endtime, "HH:mm:ss").format("hh:mm A"),
-      };
-    });
+//   const handleUpdateTaskSubmit = (event) => {
+//     event.preventDefault();
+//     // Implement logic to update task
+//     const updatedTasks = tasks.map((task) => (task === selectedTask ? newTask : task));
+//     setTasks(updatedTasks);
+//     setIsUpdateTaskPopupOpen(false);
+//   };
 
-    return res.json(formattedData);
-  });
-});
+//   return (
+//     <div className="to-do-app">
+//       <div className="nav-bar">
+//         <h1>To Do Application</h1>
+//         <span className="current-date">{currentDate.toLocaleDateString()}</span>
+//       </div>
+      
+//       <button onClick={() => setIsCreateTaskPopupOpen(true)}>Add Task</button>
+//       {isCreateTaskPopupOpen && (
+//         <div className="popup">
+//           <h2>Create New Task</h2>
+//           <form onSubmit={handleCreateTaskSubmit}>
+//             <label htmlFor="taskName">Task Name:</label>
+//             <input type="text" id="taskName" name="name" value={newTask.name} onChange={handleCreateTaskChange} required />
+//             <br />
 
+//             <label htmlFor="progress">Progress:</label>
+//             <select id="progress" name="progress" value={newTask.progress} onChange={handleCreateTaskChange} required>
+//               <option value="Todo">Todo</option>
+//               <option value="Doing">Doing</option>
+//               <option value="Done">Done</option>
+//             </select>
+//             <br />
 
-app.get("/items/:id", (req, res) => {
-  const itemId = req.params.id;
-  const q = "SELECT * FROM items WHERE id=?";
+//             <label htmlFor="startTime">Start Time:</label>
+//             <input type="text" id="startTime" name="startTime" value={newTask.startTime} onChange={handleCreateTaskChange} required />
+//             <br />
 
-  db.query(q, [itemId], (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error fetching item from the database" });
-    }
-    const formattedData = data.map((item) => {
-      return {
-        ...item,
-        starttime: moment(item.starttime, "HH:mm:ss").format("hh:mm A"),
-        endtime: moment(item.endtime, "HH:mm:ss").format("hh:mm A"),
-      };
-    });
+//             <label htmlFor="endTime">End Time:</label>
+//             <input type="text" id="endTime" name="endTime" value={newTask.endTime} onChange={handleCreateTaskChange} required />
+//             <br />
 
-    if (data.length === 0) {
-      return res.status(404).json("Item not found");
-    }
+//             <button type="submit">Create</button>
+//             <button type="button" onClick={() => setIsCreateTaskPopupOpen(false)}>Cancel</button>
+//           </form>
+//         </div>
+//       )}
+//       {isUpdateTaskPopupOpen && (
+//         <div className="popup">
+//           <h2>Update Task</h2>
+//           <form onSubmit={handleUpdateTaskSubmit}>
+//             <label htmlFor="taskName">Task Name:</label>
+//             <input type="text" id="taskName" name="name" value={newTask.name} onChange={handleCreateTaskChange} required />
+//             <br />
 
-    return res.json(data[0]);
-  });
-});
+//             <label htmlFor="progress">Progress:</label>
+//             <select id="progress" name="progress" value={newTask.progress} onChange={handleCreateTaskChange} required>
+//               <option value="Todo">Todo</option>
+//               <option value="Doing">Doing</option>
+//               <option value="Done">Done</option>
+//             </select>
+//             <br />
 
-app.delete("/items/:id", (req, res) => {
-  const itemId = req.params.id;
+//             <label htmlFor="startTime">Start Time:</label>
+//             <input type="text" id="startTime" name="startTime" value={newTask.startTime} onChange={handleCreateTaskChange} required />
+//             <br />
 
-  // Delete the item
-  const deleteQuery = "DELETE FROM items WHERE id=?";
-  db.query(deleteQuery, [itemId], (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error deleting item from the database" });
-    }
+//             <label htmlFor="endTime">End Time:</label>
+//             <input type="text" id="endTime" name="endTime" value={newTask.endTime} onChange={handleCreateTaskChange} required />
+//             <br />
 
-    // Check if all data is deleted
-    const checkAllDataDeletedQuery = "SELECT COUNT(*) AS count FROM items";
-    db.query(checkAllDataDeletedQuery, (err, result) => {
-      if (err) {
-        console.error(err);
-        return res
-          .status(500)
-          .json({ error: "Error checking if all data is deleted" });
-      }
+//             <button type="submit">Update</button>
+//             <button type="button" onClick={() => setIsUpdateTaskPopupOpen(false)}>Cancel</button>
+//           </form>
+//         </div>
+//       )}
+//       {isDeletePopupOpen && (
+//         <div className="popup">
+//           <h2>Are you sure you want to delete this task?</h2>
+//           <button onClick={handleDeleteTaskConfirmation}>Yes</button>
+//           <button onClick={handleCancelDeleteTask}>No</button>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
 
-      const count = result[0].count;
-
-      if (count === 0) {
-        // If all data is deleted, reset auto-increment to 1
-        const resetAutoIncrementQuery = "ALTER TABLE items AUTO_INCREMENT = 1";
-        db.query(resetAutoIncrementQuery, (err, data) => {
-          if (err) {
-            console.error(err);
-            return res
-              .status(500)
-              .json({ error: "Error resetting auto-increment value" });
-          }
-          return res.json(
-            "Deleted all data, and reset auto-increment to 1"
-          );
-        });
-      } else {
-        // If a specific ID is deleted, get the current maximum ID and set auto-increment accordingly
-        const getMaxIdQuery = "SELECT MAX(id) AS maxId FROM items";
-        db.query(getMaxIdQuery, (err, result) => {
-          if (err) {
-            console.error(err);
-            return res
-              .status(500)
-              .json({ error: "Error getting maximum ID from the database" });
-          }
-
-          const maxId = result[0].maxId;
-
-          const setAutoIncrementQuery = `ALTER TABLE items AUTO_INCREMENT = ${maxId + 1}`;
-          db.query(setAutoIncrementQuery, (err, data) => {
-            if (err) {
-              console.error(err);
-              return res
-                .status(500)
-                .json({ error: "Error setting auto-increment value" });
-            }
-            return res.json(
-              `Deleted item with ID ${itemId}, and reset auto-increment to ${maxId + 1}`
-            );
-          });
-        });
-      }
-    });
-  });
-});
-
-// New route to delete all items
-app.delete("/items", (req, res) => {
-  // Delete all items
-  const deleteAllQuery = "DELETE FROM items";
-  db.query(deleteAllQuery, (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error deleting all items from the database" });
-    }
-
-    // Reset auto-increment to 1 after deleting all data
-    const resetAutoIncrementQuery = "ALTER TABLE items AUTO_INCREMENT = 1";
-    db.query(resetAutoIncrementQuery, (err, data) => {
-      if (err) {
-        console.error(err);
-        return res
-          .status(500)
-          .json({ error: "Error resetting auto-increment value" });
-      }
-      return res.json("Deleted all items, and reset auto-increment to 1");
-    });
-  });
-});
-
-  
-
-app.put("/items/:id", (req, res) => {
-  const itemId = req.params.id;
-  console.log("Received itemId:", itemId); 
-
-  const q =
-  "UPDATE items SET taskname=?, taskprogress=?, starttime=?, endtime=? WHERE id=?";
-
-  const startTime = moment(req.body.starttime, "hh:mm A").format("HH:mm:ss");
-  const endTime = moment(req.body.endtime, "hh:mm A").format("HH:mm:ss");
-
-  const values = [
-    req.body.taskname,
-    req.body.taskprogress,
-    startTime, // Use the formatted startTime
-    endTime,   // Use the formatted endTime
-    itemId,
-  ];
-
-  db.query(q, values, (err, data) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ error: "Error updating item in the database" });
-    }
-
-    return res.json("Updated successfully");
-  });
-});
-
-
-const port = 8800;
-app.listen(port, () => {
-  console.log('Connected to the Backend!');
-});
+// ReactDOM.render(<App />, document.getElementById('root'));
